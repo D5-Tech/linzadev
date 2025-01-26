@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Authentication Prototype</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+        }
+        .verification-container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 30px;
+            width: 350px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .verification-option {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 15px 0;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .verification-option:hover {
+            background-color: #f5f5f5;
+            transform: translateY(-3px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .verification-option i {
+            margin-right: 10px;
+            font-size: 20px;
+        }
+        .back-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            cursor: pointer;
+        }
+        #googleAccountSelection {
+            background-color: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: left;
+        }
+        .google-account {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+            cursor: pointer;
+        }
+        .google-account:last-child {
+            border-bottom: none;
+        }
+        .google-account img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+        .gallery-image {
+            position: relative;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .gallery-image img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .gallery-image .check-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            border-radius: 8px;
+        }
+        .gallery-image.selected .check-overlay {
+            display: flex;
+        }
+        #phoneVerificationSection input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="mainVerificationPage" class="verification-container">
+        <h2>Verification Methods</h2>
+        <div class="verification-option" onclick="showGoogleAccounts()">
+            <i class="fab fa-google" style="color:#4285F4"></i>
+            <span>Continue with Google</span>
+        </div>
+        <div class="verification-option" onclick="showPhoneVerification()">
+            <i class="fas fa-phone" style="color:#34A853"></i>
+            <span>Phone Verification</span>
+        </div>
+        <div class="verification-option" onclick="showIDVerification()">
+            <i class="fas fa-id-card" style="color:#FBBC05"></i>
+            <span>ID Verification</span>
+        </div>
+        <a href="../intex.html"><small>Home</small></a>
+
+    </div>
+
+    <div id="googleAccountSelection" class="verification-container" style="display:none;">
+        <div class="back-button" onclick="backToMainPage('googleAccountSelection')">
+            <i class="fas fa-arrow-left"></i>
+        </div>
+        <h3>Select Google Account</h3>
+        <div id="googleAccountList"></div>
+    </div>
+
+    <div id="phoneVerificationSection" class="verification-container" style="display:none;">
+        <div class="back-button" onclick="backToMainPage('phoneVerificationSection')">
+            <i class="fas fa-arrow-left"></i>
+        </div>
+        <h3>Phone Verification</h3>
+        <input type="tel" placeholder="Enter phone number">
+        <button onclick="verifyPhoneNumber()">Verify</button>
+    </div>
+
+    <div id="idVerificationSection" class="verification-container" style="display:none;">
+        <div class="back-button" onclick="backToMainPage('idVerificationSection')">
+            <i class="fas fa-arrow-left"></i>
+        </div>
+        <h3>Select ID Document</h3>
+        <div id="imageGallery" style="display:flex; flex-wrap:wrap; justify-content:center;"></div>
+    </div>
+
+    <script>
+        // Tracking verification states
+        let verificationStates = {
+            google: false,
+            phone: false,
+            id: false
+        };
+
+        const googleAccounts = [
+    { name: 'Devanarayanan', email: 'devanarayanan@gmail.com', image: '../image/dev.png' },
+    { name: 'Linza', email: 'linza@gmail.com', image: '../image/linza.png' }
+];
+        // Populate Google Accounts
+        function populateGoogleAccounts() {
+            const accountList = document.getElementById('googleAccountList');
+            accountList.innerHTML = '';
+            googleAccounts.forEach(account => {
+                const accountEl = document.createElement('div');
+                accountEl.className = 'google-account';
+                accountEl.innerHTML = `
+                    <img src="${account.image}" alt="${account.name}">
+                    <div>
+                        <strong>${account.name}</strong><br>
+                        ${account.email}
+                    </div>
+                `;
+                accountEl.onclick = () => selectGoogleAccount(account);
+                accountList.appendChild(accountEl);
+            });
+        }
+
+        // Simulate Image Gallery
+        function populateImageGallery() {
+    const gallery = document.getElementById('imageGallery');
+    gallery.innerHTML = '';
+    for(let i = 0; i < 6; i++) {
+        const imageEl = document.createElement('div');
+        imageEl.className = 'gallery-image';
+        imageEl.innerHTML = `
+            <img src="../image/temp.png" alt="ID Document">
+            <div class="check-overlay">
+                <i class="fas fa-check"></i>
+            </div>
+        `;
+        imageEl.onclick = () => selectIDDocument(imageEl);
+        gallery.appendChild(imageEl);
+    }
+}
+        function showGoogleAccounts() {
+            document.getElementById('mainVerificationPage').style.display = 'none';
+            document.getElementById('googleAccountSelection').style.display = 'block';
+            populateGoogleAccounts();
+        }
+
+        function selectGoogleAccount(account) {
+            alert(`Selected account: ${account.email}`);
+            verificationStates.google = true;
+            backToMainPage('googleAccountSelection');
+            checkVerifications();
+        }
+
+        function showPhoneVerification() {
+            document.getElementById('mainVerificationPage').style.display = 'none';
+            document.getElementById('phoneVerificationSection').style.display = 'block';
+        }
+
+        function verifyPhoneNumber() {
+            alert('Phone number verified');
+            verificationStates.phone = true;
+            backToMainPage('phoneVerificationSection');
+            checkVerifications();
+        }
+
+        function showIDVerification() {
+            document.getElementById('mainVerificationPage').style.display = 'none';
+            document.getElementById('idVerificationSection').style.display = 'block';
+            populateImageGallery();
+        }
+
+        function selectIDDocument(imageEl) {
+            imageEl.classList.toggle('selected');
+            if (imageEl.classList.contains('selected')) {
+                verificationStates.id = true;
+                setTimeout(() => {
+                    backToMainPage('idVerificationSection');
+                    checkVerifications();
+                }, 1000);
+            }
+        }
+
+        function checkVerifications() {
+            if (verificationStates.google && verificationStates.phone && verificationStates.id) {
+                window.location.href = 'hello.html';
+            }
+        }
+
+        function backToMainPage(currentSection) {
+            document.getElementById(currentSection).style.display = 'none';
+            document.getElementById('mainVerificationPage').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

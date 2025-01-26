@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Network Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css">
+    <style>
+        body { background-color: #f4f4f4; }
+        .led {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .led:hover { transform: scale(1.1); }
+        .led-high { background-color: red; }
+        .led-medium { background-color: yellow; }
+        .led-normal { background-color: green; }
+        .led-active { border: 3px solid black; }
+        #messageBox { max-height: 200px; overflow-y: auto; }
+        #map { height: 300px; border-radius: 10px; }
+        .status-label {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+        .toggle-btn {
+            width: 100px;
+            padding: 10px;
+            margin: 5px;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+    </style>
+</head>
+<body class="p-6 bg-gray-100">
+    <div class="container mx-auto grid grid-cols-3 gap-6">
+        <!-- Left Section: Location & Dongle Network -->
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <div class="flex items-center justify-between mb-4">
+                <span class="font-semibold">Location Tracking:</span>
+                <label class="switch">
+                    <input type="checkbox" id="locationToggle" class="hidden">
+                    <span class="slider bg-gray-300 rounded-full"></span>
+                </label>
+            </div>
+            
+            <div class="mb-4">
+                <h3 class="font-bold text-blue-600">Dongle Network Speed</h3>
+                <div id="networkSpeed" class="text-2xl font-bold text-blue-800">0 Mbps</div>
+            </div>
+            
+            <div id="map" class="mt-4 shadow-md"></div>
+            <a href="../intex.html"><small>Home</small></a>
+
+        </div>
+        
+        <!-- Center Section: Controls -->
+        <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+            <button id="normalBtn" class="toggle-btn bg-blue-500 text-white hover:bg-blue-600 mb-6">
+                Normal Mode
+            </button>
+            
+            <div class="flex justify-center space-x-6 mb-6">
+                <div class="text-center">
+                    <div id="stopBtn" class="led led-high mx-auto"></div>
+                    <span class="block mt-2 status-label">Stop</span>
+                </div>
+                <div class="text-center">
+                    <div id="goBtn" class="led led-normal mx-auto"></div>
+                    <span class="block mt-2 status-label">Go</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Section: LEDs & Notifications -->
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <div class="flex justify-center space-x-4 mb-4">
+                <div class="text-center">
+                    <div id="highLed" class="led led-high"></div>
+                    <span class="block mt-2 status-label">High</span>
+                </div>
+                <div class="text-center">
+                    <div id="mediumLed" class="led led-medium"></div>
+                    <span class="block mt-2 status-label">Medium</span>
+                </div>
+                <div class="text-center">
+                    <div id="normalLed" class="led led-normal"></div>
+                    <span class="block mt-2 status-label">Normal</span>
+                </div>
+            </div>
+            
+            <div id="messageBox" class="border p-3 rounded bg-gray-50 mt-4">
+                <h3 class="font-bold mb-2 text-gray-700">System Notifications</h3>
+                <div id="notifications"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // LED Interaction
+        const leds = ['highLed', 'mediumLed', 'normalLed', 'stopBtn', 'goBtn'];
+        leds.forEach(ledId => {
+            const led = document.getElementById(ledId);
+            led.addEventListener('click', function() {
+                // Remove active state from all LEDs
+                leds.forEach(id => document.getElementById(id).classList.remove('led-active'));
+                
+                // Add active state to clicked LED
+                this.classList.add('led-active');
+                
+                // Notification for LED interaction
+                addNotification(`${this.id} activated`);
+            });
+        });
+
+        // Location Toggle
+        const locationToggle = document.getElementById('locationToggle');
+        locationToggle.addEventListener('change', function() {
+            addNotification(`Location tracking ${this.checked ? 'enabled' : 'disabled'}`);
+        });
+
+        // Network Speed Simulation
+        function updateNetworkSpeed() {
+            const speeds = [10, 25, 50, 75, 100];
+            const randomSpeed = speeds[Math.floor(Math.random() * speeds.length)];
+            document.getElementById('networkSpeed').textContent = `${randomSpeed} Mbps`;
+        }
+        setInterval(updateNetworkSpeed, 5000);
+
+        // Notifications
+        function addNotification(message) {
+            const notifications = document.getElementById('notifications');
+            const notif = document.createElement('div');
+            notif.className = 'text-sm text-gray-700 mb-1 p-1 bg-gray-200 rounded';
+            notif.textContent = new Date().toLocaleTimeString() + ': ' + message;
+            notifications.insertBefore(notif, notifications.firstChild);
+            
+            if (notifications.children.length > 5) {
+                notifications.removeChild(notifications.lastChild);
+            }
+        }
+
+        // Normal Button
+        document.getElementById('normalBtn').addEventListener('click', function() {
+            addNotification('Normal mode activated');
+        });
+
+        // Initialize Map
+        var map = L.map('map').setView([0, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Initial notifications
+        addNotification('System initialized');
+        addNotification('Network dashboard ready');
+    </script>
+</body>
+</html>

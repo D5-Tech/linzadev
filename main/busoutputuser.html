@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bus Tracking Application</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        .toggle-wrapper {
+            position: relative;
+            width: 80px;
+            height: 40px;
+            background-color: #e0e0e0;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .toggle-slider {
+            position: absolute;
+            width: 36px;
+            height: 36px;
+            background-color: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .toggle-wrapper.active {
+            background-color: #48bb78;
+        }
+        .toggle-wrapper.active .toggle-slider {
+            transform: translateX(40px);
+        }
+        .map-container {
+            height: 400px;
+            transition: all 0.5s ease;
+            opacity: 1;
+        }
+        .map-container.fade-out {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto p-4 bg-white shadow-lg rounded-lg">
+        <div class="grid grid-cols-3 gap-4">
+            <!-- Left Sidebar -->
+            <div class="col-span-1 bg-gray-50 p-4 rounded-lg">
+                <div class="grid grid-cols-3 gap-2 mb-4">
+                    <div class="bg-gray-200 h-24 rounded overflow-hidden">
+                        <img src="/image/bus1.webp" alt="Bus 1" class="w-full h-full object-cover">
+                    </div>
+                    <div class="bg-gray-200 h-24 rounded overflow-hidden">
+                        <img src="/image/bus2.jpg" alt="Bus 2" class="w-full h-full object-cover">
+                    </div>
+                    <div class="bg-gray-200 h-24 rounded overflow-hidden">
+                        <img src="/image/bus3.jpg" alt="Bus 3" class="w-full h-full object-cover">
+                    </div>
+                </div>
+
+                <!-- Toggle Switch -->
+                <div class="flex items-center mb-4">
+                    <span class="mr-2">Normal</span>
+                    <div id="mapToggleWrapper" class="toggle-wrapper active">
+                        <div class="toggle-slider"></div>
+                    </div>
+                    <span class="ml-2">Live</span>
+                </div>
+
+                <textarea placeholder="Type message..." class="w-full p-2 border rounded mb-4"></textarea>
+                <button class="w-full bg-blue-500 text-white p-2 rounded mb-4">Help</button>
+                <a href="../intex.html"><small>Home</small></a>
+
+            </div>
+
+            <!-- Center Content -->
+            <div class="col-span-1">
+                <div class="text-center mb-4">
+                    <h2 class="text-2xl font-bold">City Bus</h2>
+                    <p class="text-gray-600">Bus Number: 42</p>
+                </div>
+
+                <div class="mb-4 bg-gray-100 p-2 rounded text-center">
+                    <p>Next Stop: Central Station</p>
+                </div>
+
+                <!-- Map Container -->
+                <div id="mapContainer" class="map-container bg-gray-200 rounded"></div>
+
+                <div class="text-center mt-4">
+                    <p>Estimated Arrival: 12:45 PM</p>
+                    <!-- <a href="intex.html"><small>Home</small></a> -->
+
+                </div>
+                
+            </div>
+
+            <!-- Right Sidebar -->
+            <div class="col-span-1 bg-gray-50 p-4 rounded-lg">
+                <div class="flex justify-center space-x-4 mb-4">
+                    <div class="w-10 h-10 rounded-full bg-red-500"></div>
+                    <div class="w-10 h-10 rounded-full bg-yellow-500"></div>
+                    <div class="w-10 h-10 rounded-full bg-green-500"></div>
+                </div>
+
+                <div class="relative group">
+                    <button class="w-full bg-blue-500 text-white p-2 rounded">
+                        Crowd Level Contribution
+                    </button>
+                    <div class="hidden absolute z-10 w-full bg-white shadow-lg rounded p-4 group-hover:block">
+                        <div class="flex justify-center space-x-4">
+                            <div class="w-10 h-10 bg-red-500 rounded"></div>
+                            <div class="w-10 h-10 bg-yellow-500 rounded"></div>
+                            <div class="w-10 h-10 bg-green-500 rounded"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 text-center">
+                    <p>Approx. Fare: ₹20</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css"/>
+    
+    <script>
+        const mapToggleWrapper = document.getElementById('mapToggleWrapper');
+        const mapContainer = document.getElementById('mapContainer');
+
+        // Live Map Initialization
+        function createLiveMap() {
+            // Clear previous map
+            mapContainer.innerHTML = '';
+            
+            // Create map container
+            const mapElement = document.createElement('div');
+            mapElement.style.width = '100%';
+            mapElement.style.height = '400px';
+            mapContainer.appendChild(mapElement);
+
+            // Initialize Leaflet map
+            const liveMap = L.map(mapElement).setView([13.0827, 80.2707], 12);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(liveMap);
+
+            // Add a marker for bus location
+            L.marker([13.0827, 80.2707]).addTo(liveMap)
+             .bindPopup('Bus Location')
+             .openPopup();
+
+            return liveMap;
+        }
+
+        // Normal Route Map
+        function createNormalRouteMap() {
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '400');
+            svg.setAttribute('viewBox', '0 0 400 400');
+
+            const stops = [
+                {name: 'Start', x: 50, y: 50},
+                {name: 'Stop 1', x: 100, y: 150},
+                {name: 'Stop 2', x: 200, y: 200},
+                {name: 'Stop 3', x: 250, y: 100},
+                {name: 'Stop 4', x: 300, y: 250},
+                {name: 'End', x: 350, y: 350}
+            ];
+
+            // Gray Background Line
+            const grayLine = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+            grayLine.setAttribute('points', stops.map(stop => `${stop.x},${stop.y}`).join(' '));
+            grayLine.setAttribute('fill', 'none');
+            grayLine.setAttribute('stroke', 'gray');
+            grayLine.setAttribute('stroke-width', '3');
+            svg.appendChild(grayLine);
+
+            // Blue Progress Line
+            const blueLine = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+            blueLine.setAttribute('points', stops.slice(0, 4).map(stop => `${stop.x},${stop.y}`).join(' '));
+            blueLine.setAttribute('fill', 'none');
+            blueLine.setAttribute('stroke', 'blue');
+            blueLine.setAttribute('stroke-width', '3');
+            blueLine.classList.add('route-line');
+            svg.appendChild(blueLine);
+
+            // Stops
+            stops.forEach((stop, index) => {
+                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle.setAttribute('cx', stop.x);
+                circle.setAttribute('cy', stop.y);
+                circle.setAttribute('r', '10');
+                circle.setAttribute('fill', index < 4 ? 'blue' : 'gray');
+                
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute('x', stop.x);
+                text.setAttribute('y', stop.y + 20);
+                text.setAttribute('text-anchor', 'middle');
+                text.textContent = stop.name;
+                
+                svg.appendChild(circle);
+                svg.appendChild(text);
+            });
+
+            return svg;
+        }
+
+        // Variable to track current map state
+        let currentMap = null;
+
+        // Toggle Event Listener
+        mapToggleWrapper.addEventListener('click', function() {
+            // Toggle active state
+            this.classList.toggle('active');
+            
+            // Fade out current map
+            mapContainer.classList.add('fade-out');
+            
+            // Use setTimeout to allow fade-out animation
+            setTimeout(() => {
+                // Clear previous map if it's a Leaflet map
+                if (currentMap && currentMap.remove) {
+                    currentMap.remove();
+                    currentMap = null;
+                }
+                mapContainer.innerHTML = '';
+                
+                // Determine which map to show based on toggle state
+                if (this.classList.contains('active')) {
+                    // Switch to Live Map
+                    currentMap = createLiveMap();
+                } else {
+                    // Switch to Normal Route Map
+                    mapContainer.appendChild(createNormalRouteMap());
+                }
+                
+                // Remove fade-out class
+                mapContainer.classList.remove('fade-out');
+            }, 500);
+        });
+
+        // Initial map setup (Live map)
+        currentMap = createLiveMap();
+    </script>
+</body>
+</html>

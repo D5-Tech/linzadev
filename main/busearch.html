@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <a href="../intex.html"><small>Home</small></a>
+    <title>Kerala Bus Routes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f2f5;
+            max-width: 450px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        .app-header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .search-container {
+            display: flex;
+            align-items: center;
+            background-color: white;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        #locationBtn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        #searchBox {
+            flex-grow: 1;
+            padding: 10px;
+            border: none;
+            font-size: 16px;
+        }
+        .location-inputs {
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .location-inputs.active {
+            display: flex;
+        }
+        .location-inputs input {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        #searchBtn {
+            padding: 12px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #searchBtn:hover {
+            background-color: #45a049;
+        }
+        .bus-timing {
+            background-color: white;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+        .bus-timing:hover {
+            transform: scale(1.02);
+        }
+        .bus-timing a {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            text-decoration: none;
+            color: #333;
+        }
+        .bus-timing .time {
+            font-weight: bold;
+            color: #4CAF50;
+            font-size: 18px;
+        }
+        .bus-timing .route {
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <h1>Kerala Bus Routes</h1>
+    </div>
+
+    <div class="search-container">
+        <button id="locationBtn">📍</button>
+        <input type="text" id="searchBox" placeholder="Search Routes" readonly>
+    </div>
+
+    <div class="location-inputs">
+        <input type="text" id="currentLocation" placeholder="Current Location">
+        <input type="text" id="destination" placeholder="Destination">
+        <button id="searchBtn">Find Bus Timings</button>
+    </div>
+
+    <div id="busTimings"></div>
+
+    <script>
+const busSchedules = {
+    'Aluva-Thrissur': [
+        { time: '2pm', departure: 'Aluva', arrival: 'Thrissur', link: 'https://keralabus.org/route/aluva-thrissur' },
+        { time: '5pm', departure: 'Aluva', arrival: 'Thrissur', link: 'https://keralabus.org/route/aluva-thrissur' },
+        { time: '8pm', departure: 'Aluva', arrival: 'Thrissur', link: 'https://keralabus.org/route/aluva-thrissur' },
+        { time: '9am', departure: 'Aluva', arrival: 'Thrissur', link: 'https://keralabus.org/route/aluva-thrissur' },
+        { time: '4am', departure: 'Aluva', arrival: 'Thrissur', link: 'https://keralabus.org/route/aluva-thrissur' }
+    ],
+    'Alappuzha-Kollam': [
+        { time: '2pm', departure: 'Alappuzha', arrival: 'Kollam', link: 'https://keralabus.org/route/alappuzha-kollam' },
+        { time: '1pm', departure: 'Alappuzha', arrival: 'Kollam', link: 'https://keralabus.org/route/alappuzha-kollam' },
+        { time: '4pm', departure: 'Alappuzha', arrival: 'Kollam', link: 'https://keralabus.org/route/alappuzha-kollam' },
+        { time: '9am', departure: 'Alappuzha', arrival: 'Kollam', link: 'https://keralabus.org/route/alappuzha-kollam' },
+        { time: '10am', departure: 'Alappuzha', arrival: 'Kollam', link: 'https://keralabus.org/route/alappuzha-kollam' }
+    ]
+};
+
+const elements = {
+    searchBox: document.getElementById('searchBox'),
+    locationInputs: document.querySelector('.location-inputs'),
+    currentLocation: document.getElementById('currentLocation'),
+    destination: document.getElementById('destination'),
+    locationBtn: document.getElementById('locationBtn'),
+    searchBtn: document.getElementById('searchBtn'),
+    busTimings: document.getElementById('busTimings')
+};
+
+elements.searchBox.addEventListener('click', function() {
+    elements.locationInputs.classList.toggle('active');
+});
+
+elements.locationBtn.addEventListener('click', function() {
+    elements.currentLocation.value = 'Aluva';
+});
+
+elements.searchBtn.addEventListener('click', function() {
+    const currentLocation = elements.currentLocation.value;
+    const destination = elements.destination.value;
+    const routeKey = `${currentLocation}-${destination}`;
+    
+    elements.busTimings.innerHTML = '';
+    
+    if (busSchedules[routeKey]) {
+        busSchedules[routeKey].forEach(function(bus) {
+            const busDiv = document.createElement('div');
+            busDiv.classList.add('bus-timing');
+            busDiv.innerHTML = `
+                <a href="busoutputuser.html?from=${encodeURIComponent(currentLocation)}&to=${encodeURIComponent(destination)}&time=${encodeURIComponent(bus.time)}">
+                    <span class="time">${bus.time}</span>
+                    <span class="route">${bus.departure} to ${bus.arrival}</span>
+                </a>
+            `;
+            
+            // Optional: Store route details in localStorage for the next page
+            busDiv.querySelector('a').addEventListener('click', function(e) {
+                localStorage.setItem('routeDetails', JSON.stringify({
+                    from: currentLocation,
+                    to: destination,
+                    time: bus.time,
+                    departure: bus.departure,
+                    arrival: bus.arrival
+                }));
+            });
+            
+            elements.busTimings.appendChild(busDiv);
+        });
+    } else {
+        elements.busTimings.innerHTML = '<div style="text-align:center; color:#666;">No bus timings found for this route.</div>';
+    }
+});
+    </script>
+</body>
+</html>
